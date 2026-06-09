@@ -1,146 +1,143 @@
 # CognitiveLens
 
-A Retrieval-Augmented Generation (RAG) system that answers questions about dementia research grounded in real PubMed medical literature.
+CognitiveLens is an AI-powered research assistant that answers questions about dementia and Alzheimer's disease using real, peer-reviewed medical literature. Instead of generating generic responses, it retrieves actual PubMed abstracts relevant to your question and uses Claude to synthesize a cited, evidence-grounded answer — so every claim can be traced back to a real study.
 
-## Overview
+The goal is to make dementia research more accessible. Whether you're a caregiver trying to understand a diagnosis, a student exploring the field, or a clinician looking for a quick literature reference, CognitiveLens gives you answers that are rooted in science, not guesswork.
 
-CognitiveLens combines biomedical literature retrieval with large language model generation to produce cited, evidence-based answers about dementia, Alzheimer's disease, and related neurodegenerative conditions. Every answer traces back to real PubMed abstracts, so you can verify the source.
+---
 
-**Stack:**
-- **PubMed / Biopython Entrez** — fetches abstracts from NCBI
-- **LangChain** — text chunking with `RecursiveCharacterTextSplitter`
-- **Sentence Transformers** (`all-MiniLM-L6-v2`) — semantic embeddings
-- **ChromaDB** — persistent local vector store
-- **Anthropic Claude** (`claude-opus-4-8`) — answer generation with adaptive thinking
-- **FastAPI** — REST backend
-- **Streamlit** — interactive web frontend
+## Why This Exists
+
+Dementia affects over 55 million people worldwide, yet the research landscape is dense and difficult to navigate. Most people searching for answers online encounter either oversimplified summaries or impenetrable journal articles. CognitiveLens sits in the middle — it understands natural language questions and responds with answers that are both readable and scientifically grounded, with direct links back to the source material.
+
+---
+
+## How It Works
+
+CognitiveLens is built on a Retrieval-Augmented Generation (RAG) architecture:
+
+1. **Literature ingestion** — PubMed abstracts are fetched across 10 core dementia research topics (Alzheimer's pathophysiology, biomarkers, tau proteins, amyloid beta, vascular dementia, Lewy body dementia, frontotemporal dementia, genetics, prevention, and treatment). Each abstract is cleaned, chunked into ~500-character overlapping segments, and embedded using a sentence transformer model.
+
+2. **Semantic search** — When you ask a question, it is embedded using the same model and compared against all stored chunks using cosine similarity. The 5 most relevant chunks are retrieved from ChromaDB.
+
+3. **Answer generation** — The retrieved chunks are passed to Claude (Opus 4) along with your question. Claude generates a structured, cited answer using only what the literature says — it does not speculate or draw from general knowledge.
+
+4. **Evaluation** — Each answer can be scored on three metrics: faithfulness (are all claims supported by the sources?), answer relevance (does it address what was asked?), and context precision (were the right chunks retrieved?). Scoring is done by Claude Haiku acting as an LLM judge.
+
+---
+
+## Features
+
+- **Conversational interface** — Ask follow-up questions and maintain context across a multi-turn conversation
+- **Streaming responses** — Answers appear token by token as Claude generates them, just like a real conversation
+- **Cited sources** — Every answer includes the retrieved abstracts with authors, journal, year, relevance score, and a direct PubMed link
+- **Answer evaluation** — Run a RAGAS-style quality check on any answer to see faithfulness, relevance, and precision scores with color-coded gauges
+- **Production React UI** — Dark-themed, responsive interface built with React, Vite, and Tailwind CSS
+- **REST API** — FastAPI backend with a streaming `/chat/stream` endpoint and a `/evaluate` endpoint, usable independently of the frontend
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Literature source | PubMed via Biopython Entrez |
+| Text chunking | LangChain RecursiveCharacterTextSplitter |
+| Embeddings | Sentence Transformers (all-MiniLM-L6-v2) |
+| Vector store | ChromaDB (persistent, local) |
+| Answer generation | Anthropic Claude (claude-opus-4-8) with adaptive thinking |
+| Evaluation | Claude Haiku as LLM judge |
+| Backend | FastAPI with SSE streaming |
+| Frontend | React + Vite + Tailwind CSS |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+ (for the React frontend)
+- An Anthropic API key
+
+### Setup
+
+```bash
+git clone https://github.com/destinyj621/CognitiveLens.git
+cd CognitiveLens
+
+python -m venv .venv
+.venv\Scripts\activate        # Windows
+# source .venv/bin/activate   # macOS/Linux
+
+pip install -r requirements.txt
+```
+
+Add your credentials to `.env`:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+PUBMED_EMAIL=your@email.com
+```
+
+### Run the ingestion pipeline (one time)
+
+```bash
+python ingestion/fetch_pubmed.py    # fetch abstracts from PubMed
+python ingestion/clean.py           # clean and normalize text
+python ingestion/embed_and_store.py # embed and store in ChromaDB
+```
+
+### Launch
+
+Double-click `start.bat` (Windows) — it opens the API and React frontend in separate terminal windows.
+
+Or manually:
+
+```bash
+# Terminal 1 — API
+uvicorn api.main:app --reload
+
+# Terminal 2 — Frontend
+cd frontend-react
+npm install
+npm run dev
+```
+
+Open **http://localhost:5173**.
+
+---
 
 ## Project Structure
 
 ```
 CognitiveLens/
-├── data/raw/                    # PubMed JSON (generated, not tracked)
 ├── ingestion/
-│   ├── fetch_pubmed.py          # Search PubMed and download abstracts
-│   ├── clean.py                 # Normalize and filter abstracts
-│   └── embed_and_store.py       # Chunk, embed, and persist to ChromaDB
+│   ├── fetch_pubmed.py       # PubMed abstract fetcher
+│   ├── clean.py              # Text normalization
+│   └── embed_and_store.py    # Chunking, embedding, ChromaDB storage
 ├── retrieval/
-│   └── query_engine.py          # Embed query → retrieve → generate answer
+│   ├── query_engine.py       # Semantic search + Claude generation
+│   └── evaluator.py          # LLM-as-judge evaluation
 ├── api/
-│   └── main.py                  # FastAPI endpoints
-├── frontend/
-│   └── app.py                   # Streamlit UI
-├── chroma_store/                # ChromaDB data (generated, not tracked)
-├── .env                         # API keys (not tracked)
-├── requirements.txt
-└── README.md
+│   └── main.py               # FastAPI backend
+├── frontend-react/           # React + Vite + Tailwind frontend
+├── frontend/                 # Original Streamlit frontend (legacy)
+├── data/raw/                 # Fetched abstracts (not tracked)
+├── chroma_store/             # Vector database (not tracked)
+├── start.bat                 # One-click launcher
+└── requirements.txt
 ```
 
-## Setup
+---
 
-### 1. Clone and create a virtual environment
+## Limitations
 
-```bash
-git clone https://github.com/your-username/CognitiveLens.git
-cd CognitiveLens
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# macOS / Linux
-source .venv/bin/activate
-```
+- The knowledge base reflects PubMed literature available at ingestion time. Re-run the ingestion pipeline to refresh it.
+- Answers are only as good as the retrieved chunks. Highly specific or niche questions may not find strong matches.
+- This is not a medical device and should not be used for clinical decision-making.
 
-### 2. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Configure environment variables
-
-Copy `.env` and fill in your credentials:
-
-```bash
-cp .env .env.local   # optional — or edit .env directly
-```
-
-`.env` contents:
-
-```
-ANTHROPIC_API_KEY=sk-ant-...
-PUBMED_EMAIL=your_email@example.com
-```
-
-- **`ANTHROPIC_API_KEY`** — obtain from [console.anthropic.com](https://console.anthropic.com)
-- **`PUBMED_EMAIL`** — required by NCBI for API usage (any valid email works)
-
-## Running the Ingestion Pipeline
-
-Run these three steps once (or whenever you want to refresh the literature):
-
-```bash
-# Step 1: Fetch abstracts from PubMed (~500 abstracts across 10 dementia topics)
-python ingestion/fetch_pubmed.py
-
-# Step 2: Clean and normalize the text
-python ingestion/clean.py
-
-# Step 3: Chunk, embed, and store in ChromaDB
-python ingestion/embed_and_store.py
-```
-
-This creates `data/raw/pubmed_abstracts.json`, `data/raw/pubmed_clean.json`, and the `chroma_store/` directory.
-
-## Running the Application
-
-### Option A: Streamlit frontend (recommended)
-
-```bash
-streamlit run frontend/app.py
-```
-
-Open [http://localhost:8501](http://localhost:8501) in your browser.
-
-### Option B: FastAPI backend
-
-```bash
-uvicorn api.main:app --reload
-```
-
-API docs available at [http://localhost:8000/docs](http://localhost:8000/docs).
-
-**Query endpoint:**
-
-```bash
-curl -X POST http://localhost:8000/query \
-  -H "Content-Type: application/json" \
-  -d '{"question": "What biomarkers diagnose Alzheimer disease?"}'
-```
-
-## How It Works
-
-1. **Ingestion** — `fetch_pubmed.py` queries PubMed using 10 dementia-related search terms, downloading up to 50 abstracts per term. `clean.py` normalizes whitespace and removes non-ASCII. `embed_and_store.py` splits each abstract into ~500-character overlapping chunks, encodes them with `all-MiniLM-L6-v2`, and stores them in ChromaDB with metadata (PMID, title, authors, journal, year, URL).
-
-2. **Retrieval** — At query time, the question is embedded with the same model. ChromaDB retrieves the top-5 most similar chunks by cosine similarity.
-
-3. **Generation** — The 5 chunks are formatted as a numbered reference list and passed to Claude (`claude-opus-4-8`) with a system prompt instructing it to answer using only the provided evidence and cite sources.
-
-4. **Frontend** — The Streamlit UI displays the generated answer followed by expandable source cards for each retrieved abstract, including a direct PubMed link.
-
-## Search Topics Covered
-
-The ingestion pipeline covers these areas of dementia research:
-
-- Alzheimer's disease pathophysiology
-- Dementia biomarkers and diagnosis
-- Tau protein and neurodegeneration
-- Amyloid beta and treatment approaches
-- Vascular dementia risk factors
-- Lewy body dementia symptoms
-- Frontotemporal dementia genetics
-- Dementia prevention and lifestyle
-- Cholinesterase inhibitors
-- APOE4 and genetic risk
+---
 
 ## License
 
