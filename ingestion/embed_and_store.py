@@ -75,6 +75,16 @@ def run():
 
     print(f"Stored {len(all_docs)} chunks in ChromaDB at {CHROMA_DIR}")
 
+    # Save BM25 corpus alongside ChromaDB for hybrid retrieval
+    bm25_corpus = [
+        {"id": chunk_id, "text": doc, "metadata": meta}
+        for chunk_id, doc, meta in zip(all_ids, all_docs, all_meta)
+    ]
+    corpus_path = Path(CHROMA_DIR) / "bm25_corpus.json"
+    with open(corpus_path, "w", encoding="utf-8") as f:
+        json.dump(bm25_corpus, f, ensure_ascii=False)
+    print(f"Saved BM25 corpus ({len(bm25_corpus)} chunks) to {corpus_path}")
+
 
 if __name__ == "__main__":
     run()

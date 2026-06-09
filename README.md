@@ -17,8 +17,8 @@ Dementia affects over 55 million people worldwide, yet the research landscape is
 ### Ingestion Pipeline
 Designed and built a full literature ingestion pipeline that fetches PubMed abstracts across 10 core dementia research topics using the Biopython Entrez API. Abstracts are cleaned, normalized, and chunked into overlapping 500-character segments using LangChain's RecursiveCharacterTextSplitter, then embedded with Sentence Transformers (all-MiniLM-L6-v2) and persisted to a ChromaDB vector store — resulting in 2,228 searchable chunks from 466 unique papers.
 
-### RAG Query Engine
-Built a retrieval-augmented generation pipeline that embeds each user question at query time, retrieves the top-5 most semantically similar chunks via cosine similarity, and passes them to Claude (claude-opus-4-8) with adaptive thinking enabled. Claude generates a structured, cited answer using only what the retrieved literature states — no hallucination, no speculation beyond the sources.
+### Hybrid Retrieval Pipeline
+Built a 4-stage retrieval pipeline that goes well beyond simple vector search. At query time, both a semantic vector search (ChromaDB cosine similarity, top-20) and a BM25 keyword search (rank_bm25, top-20) run in parallel against the same 2,228-chunk corpus. Their ranked lists are merged using Reciprocal Rank Fusion — a technique from information retrieval that rewards chunks appearing near the top of multiple rankings. The fused candidate set is then re-ranked by a fine-tuned cross-encoder model (`cross-encoder/ms-marco-MiniLM-L-6-v2`), which scores each question-chunk pair jointly rather than independently. The final top-5 chunks are what Claude sees. This pipeline captures both semantic intent and exact keyword matches, significantly improving retrieval precision compared to vector search alone.
 
 ### Multi-Turn Conversational Memory
 Extended the query engine to support multi-turn conversations by passing prior message history to Claude alongside the freshly retrieved context on each turn. Users can ask follow-up questions and Claude maintains conversational context while still grounding every response in the literature.
@@ -41,6 +41,9 @@ Built a production-grade React frontend using Vite and Tailwind CSS with a dark 
 | Literature source | PubMed via Biopython Entrez |
 | Text chunking | LangChain RecursiveCharacterTextSplitter |
 | Embeddings | Sentence Transformers (all-MiniLM-L6-v2) |
+| Keyword search | BM25 (rank_bm25) |
+| Rank fusion | Reciprocal Rank Fusion (RRF) |
+| Re-ranking | Cross-encoder (ms-marco-MiniLM-L-6-v2) |
 | Vector store | ChromaDB |
 | Answer generation | Anthropic Claude (claude-opus-4-8) with adaptive thinking |
 | Evaluation | Claude Haiku as LLM judge |
