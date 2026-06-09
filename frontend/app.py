@@ -41,11 +41,11 @@ All answers are grounded in cited literature.
     st.divider()
     st.markdown("**Example questions:**")
     examples = [
-        "What biomarkers are used to diagnose Alzheimer's disease?",
-        "How does the APOE4 gene increase dementia risk?",
-        "What lifestyle factors can reduce the risk of dementia?",
-        "What are the differences between Lewy body and vascular dementia?",
-        "How do cholinesterase inhibitors work in Alzheimer's treatment?",
+        "What is dementia and how does it affect the brain?",
+        "What are the early warning signs of dementia?",
+        "Is dementia hereditary? Can it run in families?",
+        "Can dementia be prevented? What helps reduce the risk?",
+        "What is the difference between dementia and Alzheimer's disease?",
     ]
     for ex in examples:
         if st.button(ex, use_container_width=True):
