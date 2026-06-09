@@ -39,7 +39,7 @@ def run():
     with open(CLEAN_FILE, "w", encoding="utf-8") as f:
         json.dump(cleaned, f, indent=2, ensure_ascii=False)
 
-    print(f"Cleaned {len(cleaned)} articles → {CLEAN_FILE}")
+    print(f"Cleaned {len(cleaned)} articles -> {CLEAN_FILE}")
 
 
 if __name__ == "__main__":

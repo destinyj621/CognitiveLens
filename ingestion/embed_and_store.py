@@ -1,9 +1,10 @@
 """Chunk abstracts, embed with sentence-transformers, and store in ChromaDB."""
 import json
+import os
 from pathlib import Path
 
 import chromadb
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from sentence_transformers import SentenceTransformer
 
 CLEAN_FILE = Path(__file__).parent.parent / "data" / "raw" / "pubmed_clean.json"
