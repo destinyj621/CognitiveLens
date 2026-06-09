@@ -1,4 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_BASE = import.meta.env.DEV
+  ? 'http://localhost:8000'
+  : 'https://web-production-c15bd.up.railway.app'
 
 export const streamChat = async (question, history, onToken, onComplete, onError) => {
   try {
