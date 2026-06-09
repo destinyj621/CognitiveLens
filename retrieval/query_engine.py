@@ -102,6 +102,59 @@ Provide a well-structured answer citing the relevant sources (e.g., [1], [2]). E
             "year": c["metadata"].get("year", ""),
             "url": c["metadata"].get("url", ""),
             "score": round(c["score"], 4),
+            "text": c["text"],
+        }
+        for c in chunks
+    ]
+
+    return {"answer": response_text, "sources": sources, "question": question}
+
+
+def chat(question: str, history: list[dict]) -> dict:
+    """Multi-turn RAG: retrieves fresh context for the current question, passes history to Claude."""
+    chunks = retrieve(question)
+    context = build_context(chunks)
+
+    system_prompt = (
+        "You are a biomedical research assistant specializing in dementia and neurodegenerative diseases. "
+        "Answer questions using ONLY the provided PubMed abstracts. "
+        "Be precise, cite sources by their numbered reference, and acknowledge uncertainty when the evidence is limited. "
+        "When answering follow-up questions, consider the conversation history but always ground your answer in the provided abstracts."
+    )
+
+    # Build message list: previous turns (plain text) + current question with injected context
+    messages = [{"role": m["role"], "content": m["content"]} for m in history]
+    messages.append({
+        "role": "user",
+        "content": (
+            f"Based on the following PubMed abstracts, answer the question.\n\n"
+            f"QUESTION: {question}\n\n"
+            f"ABSTRACTS:\n{context}\n\n"
+            f"Provide a well-structured answer citing relevant sources (e.g., [1], [2]). "
+            f"End with a 'Sources' section."
+        ),
+    })
+
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    with client.messages.stream(
+        model="claude-opus-4-8",
+        max_tokens=1500,
+        thinking={"type": "adaptive"},
+        system=system_prompt,
+        messages=messages,
+    ) as stream:
+        response_text = stream.get_final_message().content[-1].text
+
+    sources = [
+        {
+            "pmid": c["metadata"].get("pmid", ""),
+            "title": c["metadata"].get("title", ""),
+            "authors": c["metadata"].get("authors", ""),
+            "journal": c["metadata"].get("journal", ""),
+            "year": c["metadata"].get("year", ""),
+            "url": c["metadata"].get("url", ""),
+            "score": round(c["score"], 4),
+            "text": c["text"],
         }
         for c in chunks
     ]
