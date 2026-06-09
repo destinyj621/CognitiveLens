@@ -86,14 +86,15 @@ with tab_chat:
     st.divider()
 
     # Pre-fill from sidebar example click
-    prefill = st.session_state.pop("inject_question", "")
+    if "inject_question" in st.session_state:
+        st.session_state["chat_input"] = st.session_state.pop("inject_question")
 
     with st.form("chat_form", clear_on_submit=True):
         user_input = st.text_area(
             "Your question:",
-            value=prefill,
             height=80,
             placeholder="Ask anything about dementia, or ask a follow-up...",
+            key="chat_input",
         )
         submitted = st.form_submit_button("Send", type="primary")
 
