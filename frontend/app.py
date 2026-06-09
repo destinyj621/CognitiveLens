@@ -49,16 +49,17 @@ All answers are grounded in cited literature.
     ]
     for ex in examples:
         if st.button(ex, use_container_width=True):
-            st.session_state["prefill"] = ex
+            st.session_state["question_input"] = ex
 
-question_value = st.session_state.pop("prefill", "")
+if "prefill" in st.session_state:
+    st.session_state["question_input"] = st.session_state.pop("prefill")
 
 with st.form("query_form", clear_on_submit=False):
     question = st.text_area(
         "Your question:",
-        value=question_value,
         height=100,
         placeholder="e.g. What are the main risk factors for Alzheimer's disease?",
+        key="question_input",
     )
     submitted = st.form_submit_button("Search Literature", type="primary")
 
