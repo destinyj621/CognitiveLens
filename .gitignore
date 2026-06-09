@@ -2,7 +2,6 @@
 __pycache__/
 *.pyc
 *.pyo
-chroma_store/
 data/raw/
 .venv/
 venv/
@@ -10,3 +9,4 @@ venv/
 dist/
 build/
 .DS_Store
+frontend-react/node_modules/
